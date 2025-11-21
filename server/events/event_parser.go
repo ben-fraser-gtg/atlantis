@@ -144,6 +144,12 @@ type CommentCommand struct {
 	PolicySet string
 	// ClearPolicyApproval is true if approvals should be cleared out for specified policies.
 	ClearPolicyApproval bool
+	// MultipleProjects holds multiple project names when -p is specified multiple times
+	MultipleProjects []string
+	// MultipleDirs holds multiple directories when -d is specified multiple times
+	MultipleDirs []string
+	// MultipleWorkspaces holds multiple workspaces when -w is specified multiple times
+	MultipleWorkspaces []string
 }
 
 // IsForSpecificProject returns true if the command is for a specific dir, workspace
@@ -206,6 +212,119 @@ func NewCommentCommand(repoRelDir string, flags []string, name command.Name, sub
 		PolicySet:           policySet,
 		ClearPolicyApproval: clearPolicyApproval,
 	}
+}
+
+// NewCommentCommandWithMultipleFlags constructs a CommentCommand with support for multiple flags.
+// If multiple projects/dirs/workspaces are provided, it returns a command that will be expanded later.
+func NewCommentCommandWithMultipleFlags(repoRelDirs []string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, workspaces []string, projects []string, policySet string, clearPolicyApproval bool) *CommentCommand {
+	// For backward compatibility, if only single values (or empty), use the original logic
+	var repoRelDir string
+	var workspace string
+	var project string
+
+	if len(repoRelDirs) > 0 {
+		repoRelDir = repoRelDirs[0]
+	}
+	if len(workspaces) > 0 {
+		workspace = workspaces[0]
+	}
+	if len(projects) > 0 {
+		project = projects[0]
+	}
+
+	// Clean the directory path if provided
+	if repoRelDir != "" {
+		repoRelDir = path.Clean(repoRelDir)
+		if repoRelDir == "/" {
+			repoRelDir = "."
+		}
+	}
+
+	cmd := &CommentCommand{
+		RepoRelDir:          repoRelDir,
+		Flags:               flags,
+		Name:                name,
+		SubName:             subName,
+		Verbose:             verbose,
+		Workspace:           workspace,
+		AutoMergeDisabled:   autoMergeDisabled,
+		AutoMergeMethod:     autoMergeMethod,
+		ProjectName:         project,
+		PolicySet:           policySet,
+		ClearPolicyApproval: clearPolicyApproval,
+		// Store multiple values for expansion
+		MultipleProjects:   projects,
+		MultipleDirs:       repoRelDirs,
+		MultipleWorkspaces: workspaces,
+	}
+
+	return cmd
+}
+
+// ExpandMultiFlagCommand expands a command with multiple flags into multiple single-flag commands.
+// Returns a slice of commands, each targeting a single project/dir/workspace.
+func ExpandMultiFlagCommand(cmd *CommentCommand) []*CommentCommand {
+	// If no multiple flags, return the original command
+	if len(cmd.MultipleProjects) <= 1 && len(cmd.MultipleDirs) <= 1 && len(cmd.MultipleWorkspaces) <= 1 {
+		return []*CommentCommand{cmd}
+	}
+
+	var expanded []*CommentCommand
+
+	// Expand based on which flags were provided
+	if len(cmd.MultipleProjects) > 1 {
+		// Multiple projects specified
+		for _, proj := range cmd.MultipleProjects {
+			newCmd := *cmd // Create a copy
+			newCmd.ProjectName = proj
+			newCmd.RepoRelDir = ""
+			newCmd.Workspace = ""
+			// Clear the multiple flags so we don't re-expand
+			newCmd.MultipleProjects = nil
+			newCmd.MultipleDirs = nil
+			newCmd.MultipleWorkspaces = nil
+			expanded = append(expanded, &newCmd)
+		}
+	} else if len(cmd.MultipleDirs) > 1 {
+		// Multiple directories specified
+		workspace := cmd.Workspace
+		if workspace == "" {
+			workspace = "default"
+		}
+		for _, dir := range cmd.MultipleDirs {
+			newCmd := *cmd // Create a copy
+			newCmd.RepoRelDir = dir
+			newCmd.Workspace = workspace
+			newCmd.ProjectName = ""
+			// Clear the multiple flags
+			newCmd.MultipleProjects = nil
+			newCmd.MultipleDirs = nil
+			newCmd.MultipleWorkspaces = nil
+			expanded = append(expanded, &newCmd)
+		}
+	} else if len(cmd.MultipleWorkspaces) > 1 {
+		// Multiple workspaces specified
+		dir := cmd.RepoRelDir
+		if dir == "" {
+			dir = "."
+		}
+		for _, ws := range cmd.MultipleWorkspaces {
+			newCmd := *cmd // Create a copy
+			newCmd.Workspace = ws
+			newCmd.RepoRelDir = dir
+			newCmd.ProjectName = ""
+			// Clear the multiple flags
+			newCmd.MultipleProjects = nil
+			newCmd.MultipleDirs = nil
+			newCmd.MultipleWorkspaces = nil
+			expanded = append(expanded, &newCmd)
+		}
+	} else {
+		// Shouldn't reach here, but return original if we do
+		return []*CommentCommand{cmd}
+	}
+
+	return expanded
 }
 
 //go:generate pegomock generate github.com/runatlantis/atlantis/server/events --package mocks -o mocks/mock_event_parsing.go EventParsing

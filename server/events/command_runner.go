@@ -422,9 +422,24 @@ func (c *DefaultCommandRunner) RunCommentCommand(baseRepo models.Repo, maybeHead
 		ctx.Log.Err("'fail-on-pre-workflow-hook-error' not set so running %s command.", cmd.Name.String())
 	}
 
-	cmdRunner := buildCommentCommandRunner(c, cmd.CommandName())
+	// Expand the command if multiple flags were provided
+	expandedCommands := ExpandMultiFlagCommand(cmd)
 
-	cmdRunner.Run(ctx, cmd)
+	if len(expandedCommands) > 1 {
+		ctx.Log.Info("Expanding command into %d individual commands", len(expandedCommands))
+	}
+
+	// Execute each expanded command
+	for i, singleCmd := range expandedCommands {
+		if len(expandedCommands) > 1 {
+			ctx.Log.Info("Executing command %d of %d: %s", i+1, len(expandedCommands), singleCmd.String())
+		}
+
+		cmdRunner := buildCommentCommandRunner(c, singleCmd.CommandName())
+		cmdRunner.Run(ctx, singleCmd)
+	}
+
+	c.PostWorkflowHooksCommandRunner.RunPostHooks(ctx, cmd) // nolint: errcheck
 
 	c.PostWorkflowHooksCommandRunner.RunPostHooks(ctx, cmd) // nolint: errcheck
 }
