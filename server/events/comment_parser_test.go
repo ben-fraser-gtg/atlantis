@@ -432,12 +432,13 @@ func TestParse_ValidCommand(t *testing.T) {
 			r := commentParser.Parse(comment, models.Github)
 			Equals(t, "", r.CommentResponse)
 			Equals(t, &events.CommentCommand{
-				RepoRelDir:  "",
-				Flags:       nil,
-				Name:        command.Plan,
-				Verbose:     false,
-				Workspace:   "",
-				ProjectName: "",
+				RepoRelDir:   "",
+				Flags:        nil,
+				Name:         command.Plan,
+				Verbose:      false,
+				Workspace:    "",
+				ProjectName:  "",
+				ProjectNames: []string{},
 			}, r.Command)
 		})
 	}
@@ -1050,9 +1051,10 @@ func TestParse_VCSUsername(t *testing.T) {
 var PlanUsage = `Usage of plan:
   -d, --dir string         Which directory to run plan in relative to root of repo,
                            ex. 'child/dir'.
-  -p, --project string     Which project to run plan for. Refers to the name of the
-                           project configured in a repo config file. Cannot be used
-                           at same time as workspace or dir flags.
+  -p, --project strings    Which project(s) to run plan for. Refers to the name of
+                           the project configured in a repo config file. Cannot be
+                           used at same time as workspace or dir flags. Can be
+                           specified multiple times.
       --verbose            Append Atlantis log to comment.
   -w, --workspace string   Switch to this Terraform workspace before planning.
 `
@@ -1064,10 +1066,10 @@ var ApplyUsage = `Usage of apply:
                                    for GitHub)
   -d, --dir string                 Apply the plan for this directory, relative to
                                    root of repo, ex. 'child/dir'.
-  -p, --project string             Apply the plan for this project. Refers to the
+  -p, --project strings            Apply the plan for this project(s). Refers to the
                                    name of the project configured in a repo config
                                    file. Cannot be used at same time as workspace or
-                                   dir flags.
+                                   dir flags. Can be specified multiple times.
       --verbose                    Append Atlantis log to comment.
   -w, --workspace string           Apply the plan for this Terraform workspace.
 `
@@ -1080,10 +1082,10 @@ var ApprovePolicyUsage = `Usage of approve_policies:
                                 name of the project configured in a repo config
                                 file. Cannot be used at same time as workspace or
                                 dir flags.
-  -p, --project string          Approve policies for this project. Refers to the
+  -p, --project strings         Approve policies for this project(s). Refers to the
                                 name of the project configured in a repo config
                                 file. Cannot be used at same time as workspace or
-                                dir flags.
+                                dir flags. Can be specified multiple times.
       --verbose                 Append Atlantis log to comment.
   -w, --workspace string        Approve policies for this Terraform workspace.
 `
@@ -1099,9 +1101,10 @@ var UnlockUsage = "`Usage of unlock:`\n\n ```cmake\n" +
 var ImportUsage = `Usage of import ADDRESS ID:
   -d, --dir string         Which directory to run import in relative to root of
                            repo, ex. 'child/dir'.
-  -p, --project string     Which project to run import for. Refers to the name of
+  -p, --project strings    Which project(s) to run import for. Refers to the name of
                            the project configured in a repo config file. Cannot be
-                           used at same time as workspace or dir flags.
+                           used at same time as workspace or dir flags. Can be
+                           specified multiple times.
       --verbose            Append Atlantis log to comment.
   -w, --workspace string   Switch to this Terraform workspace before importing.
 `

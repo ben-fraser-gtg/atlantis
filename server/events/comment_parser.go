@@ -227,6 +227,7 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 	var workspace string
 	var dir string
 	var project string
+	var projects []string
 	var policySet string
 	var clearPolicyApproval bool
 	var verbose bool
@@ -243,7 +244,7 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 		flagSet.SetOutput(io.Discard)
 		flagSet.StringVarP(&workspace, workspaceFlagLong, workspaceFlagShort, "", "Switch to this Terraform workspace before planning.")
 		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Which directory to run plan in relative to root of repo, ex. 'child/dir'.")
-		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", "Which project to run plan for. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags.")
+		flagSet.StringSliceVarP(&projects, projectFlagLong, projectFlagShort, []string{}, "Which project(s) to run plan for. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags. Can be specified multiple times.")
 		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
 	case command.Apply.String():
 		name = command.Apply
@@ -251,7 +252,7 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 		flagSet.SetOutput(io.Discard)
 		flagSet.StringVarP(&workspace, workspaceFlagLong, workspaceFlagShort, "", "Apply the plan for this Terraform workspace.")
 		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Apply the plan for this directory, relative to root of repo, ex. 'child/dir'.")
-		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", "Apply the plan for this project. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags.")
+		flagSet.StringSliceVarP(&projects, projectFlagLong, projectFlagShort, []string{}, "Apply the plan for this project(s). Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags. Can be specified multiple times.")
 		flagSet.BoolVarP(&autoMergeDisabled, autoMergeDisabledFlagLong, autoMergeDisabledFlagShort, false, "Disable automerge after apply.")
 		flagSet.StringVarP(&autoMergeMethod, autoMergeMethodFlagLong, autoMergeMethodFlagShort, "", "Specifies the merge method for the VCS if automerge is enabled. (Currently only implemented for GitHub)")
 		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
@@ -261,7 +262,7 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 		flagSet.SetOutput(io.Discard)
 		flagSet.StringVarP(&workspace, workspaceFlagLong, workspaceFlagShort, "", "Approve policies for this Terraform workspace.")
 		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Approve policies for this directory, relative to root of repo, ex. 'child/dir'.")
-		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", "Approve policies for this project. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags.")
+		flagSet.StringSliceVarP(&projects, projectFlagLong, projectFlagShort, []string{}, "Approve policies for this project(s). Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags. Can be specified multiple times.")
 		flagSet.StringVarP(&policySet, policySetFlagLong, policySetFlagShort, "", "Approve policies for this project. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags.")
 		flagSet.BoolVarP(&clearPolicyApproval, clearPolicyApprovalFlagLong, clearPolicyApprovalFlagShort, false, "Clear any existing policy approvals.")
 		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
@@ -274,7 +275,7 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 		flagSet = pflag.NewFlagSet(command.Version.String(), pflag.ContinueOnError)
 		flagSet.StringVarP(&workspace, workspaceFlagLong, workspaceFlagShort, "", "Switch to this Terraform workspace before running version.")
 		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Which directory to run version in relative to root of repo, ex. 'child/dir'.")
-		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", "Print the version for this project. Refers to the name of the project configured in a repo config file.")
+		flagSet.StringSliceVarP(&projects, projectFlagLong, projectFlagShort, []string{}, "Print the version for this project(s). Refers to the name of the project configured in a repo config file. Can be specified multiple times.")
 		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
 	case command.Import.String():
 		name = command.Import
@@ -282,7 +283,7 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 		flagSet.SetOutput(io.Discard)
 		flagSet.StringVarP(&workspace, workspaceFlagLong, workspaceFlagShort, "", "Switch to this Terraform workspace before importing.")
 		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Which directory to run import in relative to root of repo, ex. 'child/dir'.")
-		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", "Which project to run import for. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags.")
+		flagSet.StringSliceVarP(&projects, projectFlagLong, projectFlagShort, []string{}, "Which project(s) to run import for. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags. Can be specified multiple times.")
 		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
 	case command.State.String():
 		name = command.State
@@ -290,7 +291,7 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 		flagSet.SetOutput(io.Discard)
 		flagSet.StringVarP(&workspace, workspaceFlagLong, workspaceFlagShort, "", "Switch to this Terraform workspace before processing tfstate.")
 		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Which directory to run state command in relative to root of repo, ex. 'child/dir'.")
-		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", "Which project to run state command for. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags.")
+		flagSet.StringSliceVarP(&projects, projectFlagLong, projectFlagShort, []string{}, "Which project(s) to run state command for. Refers to the name of the project configured in a repo config file. Cannot be used at same time as workspace or dir flags. Can be specified multiple times.")
 		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
 	default:
 		return CommentParseResult{CommentResponse: fmt.Sprintf("Error: unknown command %q – this is a bug", cmd)}
@@ -318,7 +319,7 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 	// to the default or didn't set the flag so there is an edge case here we
 	// don't detect, ex. atlantis plan -p project -d . -w default won't cause
 	// an error.
-	if project != "" && (workspace != "" || dir != "") {
+	if len(projects) > 0 && (workspace != "" || dir != "") {
 		err := fmt.Sprintf("cannot use -%s/--%s at same time as -%s/--%s or -%s/--%s", projectFlagShort, projectFlagLong, dirFlagShort, dirFlagLong, workspaceFlagShort, workspaceFlagLong)
 		return CommentParseResult{CommentResponse: e.errMarkdown(err, cmd, flagSet)}
 	}
@@ -332,6 +333,13 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 		if vcsHost != models.Github {
 			err := fmt.Sprintf("--%s is not currently implemented for %s", autoMergeMethodFlagLong, vcsHost.String())
 			return CommentParseResult{CommentResponse: e.errMarkdown(err, cmd, flagSet)}
+		}
+	}
+
+	// Handle multiple projects
+	if len(projects) > 0 {
+		return CommentParseResult{
+			Command: NewCommentCommandWithMultipleProjects(dir, extraArgs, name, subName, verbose, autoMergeDisabled, autoMergeMethod, workspace, projects, policySet, clearPolicyApproval),
 		}
 	}
 

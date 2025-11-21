@@ -760,12 +760,13 @@ func TestNewCommand_CleansDir(t *testing.T) {
 func TestNewCommand_EmptyDirWorkspaceProject(t *testing.T) {
 	cmd := events.NewCommentCommand("", nil, command.Plan, "", false, false, "", "", "", "", false)
 	Equals(t, events.CommentCommand{
-		RepoRelDir:  "",
-		Flags:       nil,
-		Name:        command.Plan,
-		Verbose:     false,
-		Workspace:   "",
-		ProjectName: "",
+		RepoRelDir:   "",
+		Flags:        nil,
+		Name:         command.Plan,
+		Verbose:      false,
+		Workspace:    "",
+		ProjectName:  "",
+		ProjectNames: []string{},
 	}, *cmd)
 }
 

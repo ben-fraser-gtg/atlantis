@@ -139,7 +139,12 @@ type CommentCommand struct {
 	// ProjectName is the name of a project to run the command on. It refers to a
 	// project specified in an atlantis.yaml file.
 	// If empty then the comment specified no project.
+	// Deprecated: Use ProjectNames instead for multiple project support.
 	ProjectName string
+	// ProjectNames is a list of project names to run the command on. It refers to
+	// projects specified in an atlantis.yaml file.
+	// If empty then the comment specified no projects.
+	ProjectNames []string
 	// PolicySet is the name of a policy set to run an approval on.
 	PolicySet string
 	// ClearPolicyApproval is true if approvals should be cleared out for specified policies.
@@ -150,7 +155,7 @@ type CommentCommand struct {
 // or project name. Otherwise it's a command like "atlantis plan" or "atlantis
 // apply".
 func (c CommentCommand) IsForSpecificProject() bool {
-	return c.RepoRelDir != "" || c.Workspace != "" || c.ProjectName != ""
+	return c.RepoRelDir != "" || c.Workspace != "" || c.ProjectName != "" || len(c.ProjectNames) > 0
 }
 
 // Dir returns the dir of this command.
@@ -180,7 +185,11 @@ func (c CommentCommand) IsAutoplan() bool {
 
 // String returns a string representation of the command.
 func (c CommentCommand) String() string {
-	return fmt.Sprintf("command=%q, verbose=%t, dir=%q, workspace=%q, project=%q, policyset=%q, auto-merge-disabled=%t, auto-merge-method=%s, clear-policy-approval=%t, flags=%q", c.Name.String(), c.Verbose, c.RepoRelDir, c.Workspace, c.ProjectName, c.PolicySet, c.AutoMergeDisabled, c.AutoMergeMethod, c.ClearPolicyApproval, strings.Join(c.Flags, ","))
+	projects := c.ProjectName
+	if len(c.ProjectNames) > 0 {
+		projects = strings.Join(c.ProjectNames, ",")
+	}
+	return fmt.Sprintf("command=%q, verbose=%t, dir=%q, workspace=%q, project=%q, policyset=%q, auto-merge-disabled=%t, auto-merge-method=%s, clear-policy-approval=%t, flags=%q", c.Name.String(), c.Verbose, c.RepoRelDir, c.Workspace, projects, c.PolicySet, c.AutoMergeDisabled, c.AutoMergeMethod, c.ClearPolicyApproval, strings.Join(c.Flags, ","))
 }
 
 // NewCommentCommand constructs a CommentCommand, setting all missing fields to defaults.
@@ -203,6 +212,33 @@ func NewCommentCommand(repoRelDir string, flags []string, name command.Name, sub
 		AutoMergeDisabled:   autoMergeDisabled,
 		AutoMergeMethod:     autoMergeMethod,
 		ProjectName:         project,
+		ProjectNames:        []string{},
+		PolicySet:           policySet,
+		ClearPolicyApproval: clearPolicyApproval,
+	}
+}
+
+// NewCommentCommandWithMultipleProjects constructs a CommentCommand with multiple project names.
+func NewCommentCommandWithMultipleProjects(repoRelDir string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, workspace string, projects []string, policySet string, clearPolicyApproval bool) *CommentCommand {
+	// If repoRelDir was empty we want to keep it that way to indicate that it
+	// wasn't specified in the comment.
+	if repoRelDir != "" {
+		repoRelDir = path.Clean(repoRelDir)
+		if repoRelDir == "/" {
+			repoRelDir = "."
+		}
+	}
+	return &CommentCommand{
+		RepoRelDir:          repoRelDir,
+		Flags:               flags,
+		Name:                name,
+		SubName:             subName,
+		Verbose:             verbose,
+		Workspace:           workspace,
+		AutoMergeDisabled:   autoMergeDisabled,
+		AutoMergeMethod:     autoMergeMethod,
+		ProjectName:         "",
+		ProjectNames:        projects,
 		PolicySet:           policySet,
 		ClearPolicyApproval: clearPolicyApproval,
 	}
