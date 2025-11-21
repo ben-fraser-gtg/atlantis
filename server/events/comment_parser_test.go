@@ -1051,14 +1051,15 @@ func TestParse_VCSUsername(t *testing.T) {
 }
 
 var PlanUsage = `Usage of plan:
-  -d, --dir string         Which directory to run plan in relative to root of repo,
-                           ex. 'child/dir'.
-  -p, --project strings    Which project(s) to run plan for. Refers to the name of
-                           the project configured in a repo config file. Cannot be
-                           used at same time as workspace or dir flags. Can be
-                           specified multiple times.
-      --verbose            Append Atlantis log to comment.
-  -w, --workspace string   Switch to this Terraform workspace before planning.
+  -d, --dir strings         Which directory to run plan in relative to root of repo,
+                            ex. 'child/dir'. Can be specified multiple times.
+  -p, --project strings     Which project(s) to run plan for. Refers to the name of
+                            the project configured in a repo config file. Cannot be
+                            used at same time as workspace or dir flags. Can be
+                            specified multiple times.
+      --verbose             Append Atlantis log to comment.
+  -w, --workspace strings   Switch to this Terraform workspace before planning. Can
+                            be specified multiple times.
 `
 
 var ApplyUsage = `Usage of apply:
@@ -1066,20 +1067,23 @@ var ApplyUsage = `Usage of apply:
       --auto-merge-method string   Specifies the merge method for the VCS if
                                    automerge is enabled. (Currently only implemented
                                    for GitHub)
-  -d, --dir string                 Apply the plan for this directory, relative to
-                                   root of repo, ex. 'child/dir'.
+  -d, --dir strings                Apply the plan for this directory, relative to
+                                   root of repo, ex. 'child/dir'. Can be specified
+                                   multiple times.
   -p, --project strings            Apply the plan for this project(s). Refers to the
                                    name of the project configured in a repo config
                                    file. Cannot be used at same time as workspace or
                                    dir flags. Can be specified multiple times.
       --verbose                    Append Atlantis log to comment.
-  -w, --workspace string           Apply the plan for this Terraform workspace.
+  -w, --workspace strings          Apply the plan for this Terraform workspace. Can
+                                   be specified multiple times.
 `
 
 var ApprovePolicyUsage = `Usage of approve_policies:
       --clear-policy-approval   Clear any existing policy approvals.
-  -d, --dir string              Approve policies for this directory, relative to
-                                root of repo, ex. 'child/dir'.
+  -d, --dir strings             Approve policies for this directory, relative to
+                                root of repo, ex. 'child/dir'. Can be specified
+                                multiple times.
       --policy-set string       Approve policies for this project. Refers to the
                                 name of the project configured in a repo config
                                 file. Cannot be used at same time as workspace or
@@ -1089,7 +1093,8 @@ var ApprovePolicyUsage = `Usage of approve_policies:
                                 file. Cannot be used at same time as workspace or
                                 dir flags. Can be specified multiple times.
       --verbose                 Append Atlantis log to comment.
-  -w, --workspace string        Approve policies for this Terraform workspace.
+  -w, --workspace strings       Approve policies for this Terraform workspace. Can
+                                be specified multiple times.
 `
 
 var UnlockUsage = "`Usage of unlock:`\n\n ```cmake\n" +
@@ -1101,12 +1106,13 @@ var UnlockUsage = "`Usage of unlock:`\n\n ```cmake\n" +
 	"\n```"
 
 var ImportUsage = `Usage of import ADDRESS ID:
-  -d, --dir string         Which directory to run import in relative to root of
-                           repo, ex. 'child/dir'.
-  -p, --project strings    Which project(s) to run import for. Refers to the name of
-                           the project configured in a repo config file. Cannot be
-                           used at same time as workspace or dir flags. Can be
-                           specified multiple times.
-      --verbose            Append Atlantis log to comment.
-  -w, --workspace string   Switch to this Terraform workspace before importing.
+  -d, --dir strings         Which directory to run import in relative to root of
+                            repo, ex. 'child/dir'. Can be specified multiple times.
+  -p, --project strings     Which project(s) to run import for. Refers to the name
+                            of the project configured in a repo config file. Cannot
+                            be used at same time as workspace or dir flags. Can be
+                            specified multiple times.
+      --verbose             Append Atlantis log to comment.
+  -w, --workspace strings   Switch to this Terraform workspace before importing. Can
+                            be specified multiple times.
 `
