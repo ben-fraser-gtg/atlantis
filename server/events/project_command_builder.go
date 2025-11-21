@@ -282,6 +282,12 @@ func (p *DefaultProjectCommandBuilder) BuildPlanCommands(ctx *command.Context, c
 		return p.buildMultipleProjectPlanCommands(ctx, cmd)
 	}
 
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building plan commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspacePlanCommands(ctx, cmd)
+	}
+
 	ctx.Log.Debug("Building plan command for specific project with directory: '%v', workspace: '%v', project: '%v'",
 		cmd.RepoRelDir, cmd.Workspace, cmd.ProjectName)
 	return p.buildProjectPlanCommand(ctx, cmd)
@@ -299,6 +305,12 @@ func (p *DefaultProjectCommandBuilder) BuildApplyCommands(ctx *command.Context, 
 		return p.buildMultipleProjectCommands(ctx, cmd)
 	}
 
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building apply commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommands(ctx, cmd)
+	}
+
 	return p.buildProjectCommand(ctx, cmd)
 }
 
@@ -313,6 +325,12 @@ func (p *DefaultProjectCommandBuilder) BuildApprovePoliciesCommands(ctx *command
 		return p.buildMultipleProjectCommands(ctx, cmd)
 	}
 
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building approve policies commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommands(ctx, cmd)
+	}
+
 	return p.buildProjectCommand(ctx, cmd)
 }
 
@@ -325,6 +343,12 @@ func (p *DefaultProjectCommandBuilder) BuildVersionCommands(ctx *command.Context
 	if len(cmd.ProjectNames) > 1 {
 		ctx.Log.Debug("Building version commands for multiple projects: %v", cmd.ProjectNames)
 		return p.buildMultipleProjectCommands(ctx, cmd)
+	}
+
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building version commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommands(ctx, cmd)
 	}
 
 	return p.buildProjectCommand(ctx, cmd)
@@ -342,6 +366,12 @@ func (p *DefaultProjectCommandBuilder) BuildImportCommands(ctx *command.Context,
 		return p.buildMultipleProjectCommands(ctx, cmd)
 	}
 
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building import commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommandsByCfg(ctx, cmd)
+	}
+
 	return p.buildProjectCommand(ctx, cmd)
 }
 
@@ -355,6 +385,12 @@ func (p *DefaultProjectCommandBuilder) BuildStateRmCommands(ctx *command.Context
 	if len(cmd.ProjectNames) > 1 {
 		ctx.Log.Debug("Building state rm commands for multiple projects: %v", cmd.ProjectNames)
 		return p.buildMultipleProjectCommands(ctx, cmd)
+	}
+
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building state rm commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommandsByCfg(ctx, cmd)
 	}
 
 	return p.buildProjectCommand(ctx, cmd)

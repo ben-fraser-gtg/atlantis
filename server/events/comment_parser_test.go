@@ -433,10 +433,12 @@ func TestParse_ValidCommand(t *testing.T) {
 			Equals(t, "", r.CommentResponse)
 			Equals(t, &events.CommentCommand{
 				RepoRelDir:   "",
+				RepoRelDirs:  []string{},
 				Flags:        nil,
 				Name:         command.Plan,
 				Verbose:      false,
 				Workspace:    "",
+				Workspaces:   []string{},
 				ProjectName:  "",
 				ProjectNames: []string{},
 			}, r.Command)
