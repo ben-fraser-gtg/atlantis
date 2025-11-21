@@ -236,8 +236,9 @@ func NewCommentCommand(repoRelDir string, flags []string, name command.Name, sub
 	}
 }
 
-// NewCommentCommandWithMultipleDirsWorkspaces constructs a CommentCommand with multiple directories and/or workspaces.
-func NewCommentCommandWithMultipleDirsWorkspaces(dirs []string, workspaces []string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, policySet string, clearPolicyApproval bool) *CommentCommand {
+// NewCommentCommandWithMultipleValues constructs a CommentCommand with multiple projects, directories, and/or workspaces.
+// This unified constructor handles all combinations of multiple values.
+func NewCommentCommandWithMultipleValues(dirs []string, workspaces []string, projects []string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, policySet string, clearPolicyApproval bool) *CommentCommand {
 	// Clean all directories
 	cleanedDirs := make([]string, 0, len(dirs))
 	for _, dir := range dirs {
@@ -262,36 +263,22 @@ func NewCommentCommandWithMultipleDirsWorkspaces(dirs []string, workspaces []str
 		AutoMergeDisabled:   autoMergeDisabled,
 		AutoMergeMethod:     autoMergeMethod,
 		ProjectName:         "",
-		ProjectNames:        []string{},
+		ProjectNames:        projects,
 		PolicySet:           policySet,
 		ClearPolicyApproval: clearPolicyApproval,
 	}
 }
 
-// NewCommentCommandWithMultipleProjects constructs a CommentCommand with multiple project names.
+// NewCommentCommandWithMultipleDirsWorkspaces is an alias for NewCommentCommandWithMultipleValues.
+// Kept for backward compatibility.
+func NewCommentCommandWithMultipleDirsWorkspaces(dirs []string, workspaces []string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, policySet string, clearPolicyApproval bool) *CommentCommand {
+	return NewCommentCommandWithMultipleValues(dirs, workspaces, []string{}, flags, name, subName, verbose, autoMergeDisabled, autoMergeMethod, policySet, clearPolicyApproval)
+}
+
+// NewCommentCommandWithMultipleProjects is an alias for NewCommentCommandWithMultipleValues.
+// Kept for backward compatibility.
 func NewCommentCommandWithMultipleProjects(repoRelDir string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, workspace string, projects []string, policySet string, clearPolicyApproval bool) *CommentCommand {
-	// If repoRelDir was empty we want to keep it that way to indicate that it
-	// wasn't specified in the comment.
-	if repoRelDir != "" {
-		repoRelDir = path.Clean(repoRelDir)
-		if repoRelDir == "/" {
-			repoRelDir = "."
-		}
-	}
-	return &CommentCommand{
-		RepoRelDir:          repoRelDir,
-		Flags:               flags,
-		Name:                name,
-		SubName:             subName,
-		Verbose:             verbose,
-		Workspace:           workspace,
-		AutoMergeDisabled:   autoMergeDisabled,
-		AutoMergeMethod:     autoMergeMethod,
-		ProjectName:         "",
-		ProjectNames:        projects,
-		PolicySet:           policySet,
-		ClearPolicyApproval: clearPolicyApproval,
-	}
+	return NewCommentCommandWithMultipleValues([]string{}, []string{}, projects, flags, name, subName, verbose, autoMergeDisabled, autoMergeMethod, policySet, clearPolicyApproval)
 }
 
 //go:generate pegomock generate github.com/runatlantis/atlantis/server/events --package mocks -o mocks/mock_event_parsing.go EventParsing

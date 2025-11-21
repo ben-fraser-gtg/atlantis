@@ -353,17 +353,10 @@ func (e *CommentParser) Parse(rawComment string, vcsHost models.VCSHostType) Com
 		}
 	}
 
-	// Handle multiple projects
-	if len(projects) > 0 {
+	// Handle multiple projects, dirs, or workspaces using unified constructor
+	if len(projects) > 0 || len(dirs) > 1 || len(workspaces) > 1 {
 		return CommentParseResult{
-			Command: NewCommentCommandWithMultipleProjects("", extraArgs, name, subName, verbose, autoMergeDisabled, autoMergeMethod, "", projects, policySet, clearPolicyApproval),
-		}
-	}
-
-	// Handle multiple dirs or workspaces
-	if len(dirs) > 1 || len(workspaces) > 1 {
-		return CommentParseResult{
-			Command: NewCommentCommandWithMultipleDirsWorkspaces(dirs, workspaces, extraArgs, name, subName, verbose, autoMergeDisabled, autoMergeMethod, policySet, clearPolicyApproval),
+			Command: NewCommentCommandWithMultipleValues(dirs, workspaces, projects, extraArgs, name, subName, verbose, autoMergeDisabled, autoMergeMethod, policySet, clearPolicyApproval),
 		}
 	}
 

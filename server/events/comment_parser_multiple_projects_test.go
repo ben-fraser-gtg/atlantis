@@ -225,3 +225,78 @@ func TestParse_AllCommandsMultipleProjects(t *testing.T) {
 		})
 	}
 }
+
+func TestParse_MultipleDirsAndWorkspaces(t *testing.T) {
+	cases := []struct {
+		description   string
+		comment       string
+		expDirs       []string
+		expWorkspaces []string
+	}{
+		{
+			description:   "multiple dirs",
+			comment:       "atlantis plan -d dir1 -d dir2",
+			expDirs:       []string{"dir1", "dir2"},
+			expWorkspaces: []string{},
+		},
+		{
+			description:   "multiple workspaces",
+			comment:       "atlantis plan -w workspace1 -w workspace2",
+			expDirs:       []string{},
+			expWorkspaces: []string{"workspace1", "workspace2"},
+		},
+		{
+			description:   "multiple dirs and workspaces combined",
+			comment:       "atlantis plan -d dir1 -d dir2 -w staging -w prod",
+			expDirs:       []string{"dir1", "dir2"},
+			expWorkspaces: []string{"staging", "prod"},
+		},
+		{
+			description:   "apply with multiple dirs",
+			comment:       "atlantis apply -d apps/frontend -d apps/backend",
+			expDirs:       []string{"apps/frontend", "apps/backend"},
+			expWorkspaces: []string{},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.description, func(t *testing.T) {
+			r := commentParser.Parse(c.comment, models.Github)
+			Assert(t, r.Command != nil, "expected command to be parsed")
+			Equals(t, c.expDirs, r.Command.RepoRelDirs)
+			Equals(t, c.expWorkspaces, r.Command.Workspaces)
+		})
+	}
+}
+
+func TestParse_CannotMixProjectsWithDirsWorkspaces(t *testing.T) {
+	cases := []struct {
+		description string
+		comment     string
+	}{
+		{
+			description: "projects with dirs",
+			comment:     "atlantis plan -p project1 -d dir1",
+		},
+		{
+			description: "projects with workspaces",
+			comment:     "atlantis plan -p project1 -w workspace1",
+		},
+		{
+			description: "projects with both dirs and workspaces",
+			comment:     "atlantis plan -p project1 -d dir1 -w workspace1",
+		},
+		{
+			description: "multiple projects with multiple dirs",
+			comment:     "atlantis plan -p project1 -p project2 -d dir1 -d dir2",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.description, func(t *testing.T) {
+			r := commentParser.Parse(c.comment, models.Github)
+			Assert(t, r.CommentResponse != "", "expected error response")
+			Assert(t, r.Command == nil, "expected no command")
+		})
+	}
+}
