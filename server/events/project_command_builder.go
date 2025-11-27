@@ -275,6 +275,19 @@ func (p *DefaultProjectCommandBuilder) BuildPlanCommands(ctx *command.Context, c
 		ctx.Log.Debug("Building plan command for all affected projects")
 		return p.buildAllCommandsByCfg(ctx, cmd.CommandName(), cmd.SubName, cmd.Flags, cmd.Verbose)
 	}
+
+	// Handle multiple projects
+	if len(cmd.ProjectNames) > 1 {
+		ctx.Log.Debug("Building plan commands for multiple projects: %v", cmd.ProjectNames)
+		return p.buildMultipleProjectPlanCommands(ctx, cmd)
+	}
+
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building plan commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspacePlanCommands(ctx, cmd)
+	}
+
 	ctx.Log.Debug("Building plan command for specific project with directory: '%v', workspace: '%v', project: '%v'",
 		cmd.RepoRelDir, cmd.Workspace, cmd.ProjectName)
 	return p.buildProjectPlanCommand(ctx, cmd)
@@ -285,6 +298,19 @@ func (p *DefaultProjectCommandBuilder) BuildApplyCommands(ctx *command.Context, 
 	if !cmd.IsForSpecificProject() {
 		return p.buildAllProjectCommandsByPlan(ctx, cmd)
 	}
+
+	// Handle multiple projects
+	if len(cmd.ProjectNames) > 1 {
+		ctx.Log.Debug("Building apply commands for multiple projects: %v", cmd.ProjectNames)
+		return p.buildMultipleProjectCommands(ctx, cmd)
+	}
+
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building apply commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommands(ctx, cmd)
+	}
+
 	return p.buildProjectCommand(ctx, cmd)
 }
 
@@ -292,6 +318,19 @@ func (p *DefaultProjectCommandBuilder) BuildApprovePoliciesCommands(ctx *command
 	if !cmd.IsForSpecificProject() {
 		return p.buildAllProjectCommandsByPlan(ctx, cmd)
 	}
+
+	// Handle multiple projects
+	if len(cmd.ProjectNames) > 1 {
+		ctx.Log.Debug("Building approve policies commands for multiple projects: %v", cmd.ProjectNames)
+		return p.buildMultipleProjectCommands(ctx, cmd)
+	}
+
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building approve policies commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommands(ctx, cmd)
+	}
+
 	return p.buildProjectCommand(ctx, cmd)
 }
 
@@ -299,6 +338,19 @@ func (p *DefaultProjectCommandBuilder) BuildVersionCommands(ctx *command.Context
 	if !cmd.IsForSpecificProject() {
 		return p.buildAllProjectCommandsByPlan(ctx, cmd)
 	}
+
+	// Handle multiple projects
+	if len(cmd.ProjectNames) > 1 {
+		ctx.Log.Debug("Building version commands for multiple projects: %v", cmd.ProjectNames)
+		return p.buildMultipleProjectCommands(ctx, cmd)
+	}
+
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building version commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommands(ctx, cmd)
+	}
+
 	return p.buildProjectCommand(ctx, cmd)
 }
 
@@ -307,6 +359,19 @@ func (p *DefaultProjectCommandBuilder) BuildImportCommands(ctx *command.Context,
 		// import discard a plan file, so use buildAllCommandsByCfg instead buildAllProjectCommandsByPlan.
 		return p.buildAllCommandsByCfg(ctx, cmd.CommandName(), cmd.SubName, cmd.Flags, cmd.Verbose)
 	}
+
+	// Handle multiple projects
+	if len(cmd.ProjectNames) > 1 {
+		ctx.Log.Debug("Building import commands for multiple projects: %v", cmd.ProjectNames)
+		return p.buildMultipleProjectCommands(ctx, cmd)
+	}
+
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building import commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommandsByCfg(ctx, cmd)
+	}
+
 	return p.buildProjectCommand(ctx, cmd)
 }
 
@@ -315,6 +380,19 @@ func (p *DefaultProjectCommandBuilder) BuildStateRmCommands(ctx *command.Context
 		// state rm discard a plan file, so use buildAllCommandsByCfg instead buildAllProjectCommandsByPlan.
 		return p.buildAllCommandsByCfg(ctx, cmd.CommandName(), cmd.SubName, cmd.Flags, cmd.Verbose)
 	}
+
+	// Handle multiple projects
+	if len(cmd.ProjectNames) > 1 {
+		ctx.Log.Debug("Building state rm commands for multiple projects: %v", cmd.ProjectNames)
+		return p.buildMultipleProjectCommands(ctx, cmd)
+	}
+
+	// Handle multiple dirs or workspaces
+	if len(cmd.RepoRelDirs) > 1 || len(cmd.Workspaces) > 1 {
+		ctx.Log.Debug("Building state rm commands for multiple dirs/workspaces: dirs=%v, workspaces=%v", cmd.RepoRelDirs, cmd.Workspaces)
+		return p.buildMultipleDirWorkspaceCommandsByCfg(ctx, cmd)
+	}
+
 	return p.buildProjectCommand(ctx, cmd)
 }
 
@@ -608,6 +686,9 @@ func (p *DefaultProjectCommandBuilder) buildProjectPlanCommand(ctx *command.Cont
 		workspace = cmd.Workspace
 	}
 
+	// Get project name from either ProjectName or ProjectNames[0]
+	projectName := getProjectNameFromCommand(cmd)
+
 	var pcc []command.ProjectContext
 
 	ctx.Log.Debug("building plan command")
@@ -663,8 +744,9 @@ func (p *DefaultProjectCommandBuilder) buildProjectPlanCommand(ctx *command.Cont
 			}
 		}
 
-		if cmd.ProjectName != "" {
-			ctx.Log.Debug("Command project name specified: %s", cmd.ProjectName)
+		projectName := getProjectNameFromCommand(cmd)
+		if projectName != "" {
+			ctx.Log.Debug("Command project name specified: %s", projectName)
 			var notFoundFiles = []string{}
 			var repoConfig valid.RepoCfg
 
@@ -672,7 +754,7 @@ func (p *DefaultProjectCommandBuilder) buildProjectPlanCommand(ctx *command.Cont
 			if err != nil {
 				return pcc, err
 			}
-			repoCfgProjects := repoConfig.FindProjectsByName(cmd.ProjectName)
+			repoCfgProjects := repoConfig.FindProjectsByName(projectName)
 
 			for _, f := range modifiedFiles {
 				foundDir := false
@@ -711,7 +793,7 @@ func (p *DefaultProjectCommandBuilder) buildProjectPlanCommand(ctx *command.Cont
 		ctx,
 		command.Plan,
 		"",
-		cmd.ProjectName,
+		projectName,
 		cmd.Flags,
 		defaultRepoDir,
 		repoRelDir,
@@ -852,7 +934,7 @@ func (p *DefaultProjectCommandBuilder) buildProjectCommand(ctx *command.Context,
 		ctx,
 		cmd.Name,
 		cmd.SubName,
-		cmd.ProjectName,
+		getProjectNameFromCommand(cmd),
 		cmd.Flags,
 		repoDir,
 		repoRelDir,

@@ -119,7 +119,11 @@ func (c AutoplanCommand) IsAutoplan() bool {
 type CommentCommand struct {
 	// RepoRelDir is the path relative to the repo root to run the command in.
 	// Will never end in "/". If empty then the comment specified no directory.
+	// Deprecated: Use RepoRelDirs for multiple directory support.
 	RepoRelDir string
+	// RepoRelDirs is a list of paths relative to the repo root to run the command in.
+	// If empty then the comment specified no directories.
+	RepoRelDirs []string
 	// Flags are the extra arguments appended to the comment,
 	// ex. atlantis plan -- -target=resource
 	Flags []string
@@ -135,11 +139,20 @@ type CommentCommand struct {
 	Verbose bool
 	// Workspace is the name of the Terraform workspace to run the command in.
 	// If empty then the comment specified no workspace.
+	// Deprecated: Use Workspaces for multiple workspace support.
 	Workspace string
+	// Workspaces is a list of Terraform workspaces to run the command in.
+	// If empty then the comment specified no workspaces.
+	Workspaces []string
 	// ProjectName is the name of a project to run the command on. It refers to a
 	// project specified in an atlantis.yaml file.
 	// If empty then the comment specified no project.
+	// Deprecated: Use ProjectNames instead for multiple project support.
 	ProjectName string
+	// ProjectNames is a list of project names to run the command on. It refers to
+	// projects specified in an atlantis.yaml file.
+	// If empty then the comment specified no projects.
+	ProjectNames []string
 	// PolicySet is the name of a policy set to run an approval on.
 	PolicySet string
 	// ClearPolicyApproval is true if approvals should be cleared out for specified policies.
@@ -150,7 +163,7 @@ type CommentCommand struct {
 // or project name. Otherwise it's a command like "atlantis plan" or "atlantis
 // apply".
 func (c CommentCommand) IsForSpecificProject() bool {
-	return c.RepoRelDir != "" || c.Workspace != "" || c.ProjectName != ""
+	return c.RepoRelDir != "" || c.Workspace != "" || c.ProjectName != "" || len(c.ProjectNames) > 0 || len(c.RepoRelDirs) > 0 || len(c.Workspaces) > 0
 }
 
 // Dir returns the dir of this command.
@@ -180,7 +193,19 @@ func (c CommentCommand) IsAutoplan() bool {
 
 // String returns a string representation of the command.
 func (c CommentCommand) String() string {
-	return fmt.Sprintf("command=%q, verbose=%t, dir=%q, workspace=%q, project=%q, policyset=%q, auto-merge-disabled=%t, auto-merge-method=%s, clear-policy-approval=%t, flags=%q", c.Name.String(), c.Verbose, c.RepoRelDir, c.Workspace, c.ProjectName, c.PolicySet, c.AutoMergeDisabled, c.AutoMergeMethod, c.ClearPolicyApproval, strings.Join(c.Flags, ","))
+	projects := c.ProjectName
+	if len(c.ProjectNames) > 0 {
+		projects = strings.Join(c.ProjectNames, ",")
+	}
+	dirs := c.RepoRelDir
+	if len(c.RepoRelDirs) > 0 {
+		dirs = strings.Join(c.RepoRelDirs, ",")
+	}
+	workspaces := c.Workspace
+	if len(c.Workspaces) > 0 {
+		workspaces = strings.Join(c.Workspaces, ",")
+	}
+	return fmt.Sprintf("command=%q, verbose=%t, dir=%q, workspace=%q, project=%q, policyset=%q, auto-merge-disabled=%t, auto-merge-method=%s, clear-policy-approval=%t, flags=%q", c.Name.String(), c.Verbose, dirs, workspaces, projects, c.PolicySet, c.AutoMergeDisabled, c.AutoMergeMethod, c.ClearPolicyApproval, strings.Join(c.Flags, ","))
 }
 
 // NewCommentCommand constructs a CommentCommand, setting all missing fields to defaults.
@@ -203,9 +228,57 @@ func NewCommentCommand(repoRelDir string, flags []string, name command.Name, sub
 		AutoMergeDisabled:   autoMergeDisabled,
 		AutoMergeMethod:     autoMergeMethod,
 		ProjectName:         project,
+		ProjectNames:        []string{},
+		RepoRelDirs:         []string{},
+		Workspaces:          []string{},
 		PolicySet:           policySet,
 		ClearPolicyApproval: clearPolicyApproval,
 	}
+}
+
+// NewCommentCommandWithMultipleValues constructs a CommentCommand with multiple projects, directories, and/or workspaces.
+// This unified constructor handles all combinations of multiple values.
+func NewCommentCommandWithMultipleValues(dirs []string, workspaces []string, projects []string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, policySet string, clearPolicyApproval bool) *CommentCommand {
+	// Clean all directories
+	cleanedDirs := make([]string, 0, len(dirs))
+	for _, dir := range dirs {
+		if dir != "" {
+			cleanedDir := path.Clean(dir)
+			if cleanedDir == "/" {
+				cleanedDir = "."
+			}
+			cleanedDirs = append(cleanedDirs, cleanedDir)
+		}
+	}
+
+	return &CommentCommand{
+		RepoRelDir:          "",
+		RepoRelDirs:         cleanedDirs,
+		Flags:               flags,
+		Name:                name,
+		SubName:             subName,
+		Verbose:             verbose,
+		Workspace:           "",
+		Workspaces:          workspaces,
+		AutoMergeDisabled:   autoMergeDisabled,
+		AutoMergeMethod:     autoMergeMethod,
+		ProjectName:         "",
+		ProjectNames:        projects,
+		PolicySet:           policySet,
+		ClearPolicyApproval: clearPolicyApproval,
+	}
+}
+
+// NewCommentCommandWithMultipleDirsWorkspaces is an alias for NewCommentCommandWithMultipleValues.
+// Kept for backward compatibility.
+func NewCommentCommandWithMultipleDirsWorkspaces(dirs []string, workspaces []string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, policySet string, clearPolicyApproval bool) *CommentCommand {
+	return NewCommentCommandWithMultipleValues(dirs, workspaces, []string{}, flags, name, subName, verbose, autoMergeDisabled, autoMergeMethod, policySet, clearPolicyApproval)
+}
+
+// NewCommentCommandWithMultipleProjects is an alias for NewCommentCommandWithMultipleValues.
+// Kept for backward compatibility.
+func NewCommentCommandWithMultipleProjects(repoRelDir string, flags []string, name command.Name, subName string, verbose, autoMergeDisabled bool, autoMergeMethod string, workspace string, projects []string, policySet string, clearPolicyApproval bool) *CommentCommand {
+	return NewCommentCommandWithMultipleValues([]string{}, []string{}, projects, flags, name, subName, verbose, autoMergeDisabled, autoMergeMethod, policySet, clearPolicyApproval)
 }
 
 //go:generate pegomock generate github.com/runatlantis/atlantis/server/events --package mocks -o mocks/mock_event_parsing.go EventParsing
